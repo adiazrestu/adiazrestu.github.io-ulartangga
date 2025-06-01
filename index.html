@@ -63,8 +63,9 @@
         }
         .board-cell {
             width: 10%; height: 10%; float: left; box-sizing: border-box;
-            border: 1px solid #ddd; display: flex; justify-content: flex-start; 
+            border: 1px solid #ddd; display: flex; justify-content: flex-start;
             align-items: flex-start; position: relative;
+            /* Latar belakang default sel adalah putih (dari .game-board-container) */
         }
         .cell-number {
             padding: 2px; color: #777; font-size: clamp(6px, 1.8vw, 10px); z-index: 1;
@@ -83,6 +84,22 @@
         .player1 { background-color: red; }
         .player2 { background-color: blue; }
 
+        /* PERUBAHAN CSS DI SINI: Warna latar untuk petak ular dan tangga */
+        .snake-head {
+            background-color: rgba(255, 0, 0, 0.15); /* Merah muda transparan */
+        }
+        .ladder-bottom {
+            background-color: rgba(0, 0, 255, 0.15); /* Biru muda transparan */
+        }
+        /* Petak normal, snake-tail, dan ladder-top tidak diberi warna latar khusus, jadi akan default putih */
+
+        /* Warna untuk petak finish (nomor 100) */
+        #cell-100 {
+            background-color: rgba(144, 238, 144, 0.4); /* Hijau muda transparan */
+            /* Atau: background-color: lightgreen; */
+        }
+
+
         .controls-info-wrapper {
             width: 100%; max-width: 500px; display: flex; flex-direction: column;
             gap: 15px; margin: 0 auto;
@@ -94,43 +111,27 @@
         .game-info p { margin-bottom: 8px; font-size: 0.95em; word-wrap: break-word; }
         .game-info strong { color: #000; }
         
-        /* Styling untuk Visual Dadu */
-        #diceDisplayContainer { /* Wadah untuk memusatkan dadu jika perlu */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 10px 0;
-            min-height: 70px; /* Beri ruang untuk dadu */
+        #diceDisplayContainer {
+            display: flex; justify-content: center; align-items: center;
+            margin: 10px 0; min-height: 70px;
         }
         .dice {
-            width: 60px; /* Ukuran dadu */
-            height: 60px;
-            background-color: #fdfdfd;
-            border: 2px solid #333;
-            border-radius: 8px; /* Sudut sedikit membulat */
-            padding: 6px; /* Jarak antara titik dan tepi dadu */
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 4px; /* Jarak antar posisi titik */
+            width: 60px; height: 60px; background-color: #fdfdfd;
+            border: 2px solid #333; border-radius: 8px; padding: 6px;
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr); gap: 4px;
         }
         .dot {
-            width: 100%; /* Mengisi sel grid */
-            height: 100%;
-            background-color: #333;
-            border-radius: 50%; /* Membuat titik menjadi bulat */
-            visibility: hidden; /* Sembunyikan semua titik secara default */
-            /* align-self: center; justify-self: center; /* Sudah oleh grid item */
+            width: 100%; height: 100%; background-color: #333;
+            border-radius: 50%; visibility: hidden;
         }
-        /* Posisi spesifik untuk setiap titik (tidak perlu diubah) */
-        .dot1 { grid-area: 1 / 1 / 2 / 2; } /* baris 1, kolom 1 */
-        .dot2 { grid-area: 1 / 3 / 2 / 4; } /* baris 1, kolom 3 */
-        .dot3 { grid-area: 2 / 1 / 3 / 2; } /* baris 2, kolom 1 */
-        .dot4 { grid-area: 2 / 2 / 3 / 3; } /* baris 2, kolom 2 (tengah) */
-        .dot5 { grid-area: 2 / 3 / 3 / 4; } /* baris 2, kolom 3 */
-        .dot6 { grid-area: 3 / 1 / 4 / 2; } /* baris 3, kolom 1 */
-        .dot7 { grid-area: 3 / 3 / 4 / 4; } /* baris 3, kolom 3 */
-
+        .dot1 { grid-area: 1 / 1 / 2 / 2; }
+        .dot2 { grid-area: 1 / 3 / 2 / 4; }
+        .dot3 { grid-area: 2 / 1 / 3 / 2; }
+        .dot4 { grid-area: 2 / 2 / 3 / 3; }
+        .dot5 { grid-area: 2 / 3 / 3 / 4; }
+        .dot6 { grid-area: 3 / 1 / 4 / 2; }
+        .dot7 { grid-area: 3 / 3 / 4 / 4; }
 
         #message, #errorMessage {
             margin-top: 10px; font-weight: bold; min-height: 20px; text-align: center;
@@ -159,6 +160,7 @@
     </style>
 </head>
 <body>
+
     <h1>Ular Tangga Multiplayer</h1>
 
     <audio id="soundMove" src="move-sound.mp3" preload="auto"></audio>
@@ -219,12 +221,12 @@
         const SNAKE_ICON_EMOJI = '🐍';
         const LADDER_ICON_EMOJI = '🪜';
 
-        const snakesAndLadders = { /* ... (data ular tangga tetap sama) ... */ 
+        const snakesAndLadders = {
             17: 7, 54: 34, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 99: 78,
             4: 14, 9: 31, 20: 38, 28: 84, 40: 59, 51: 67, 63: 81, 71: 91
         };
 
-        let currentPlayerName = ""; /* ... (variabel global lain tetap sama) ... */
+        let currentPlayerName = "";
         let currentGameId = "";
         let currentPlayerNumber = 0;
         let pollingInterval;
@@ -232,26 +234,17 @@
         const gameBoard = document.getElementById('gameBoard');
         const player1Piece = createPlayerElement('P1', 'player1');
         const player2Piece = createPlayerElement('P2', 'player2');
-        // Referensi ke titik-titik dadu
         const diceDots = [
             document.querySelector('#diceFace .dot1'), document.querySelector('#diceFace .dot2'),
             document.querySelector('#diceFace .dot3'), document.querySelector('#diceFace .dot4'),
             document.querySelector('#diceFace .dot5'), document.querySelector('#diceFace .dot6'),
             document.querySelector('#diceFace .dot7')
         ];
-
-        // Pola titik untuk setiap angka dadu (indeks array = angka dadu - 1)
-        // Setiap sub-array berisi indeks titik (0-6) yang harus terlihat
         const dicePatterns = [
-            [3],             // Angka 1: titik tengah (indeks 3 dari diceDots adalah .dot4)
-            [0, 6],          // Angka 2: titik pojok atas-kiri dan bawah-kanan
-            [0, 3, 6],       // Angka 3: pojok atas-kiri, tengah, pojok bawah-kanan
-            [0, 1, 5, 6],    // Angka 4: empat pojok
-            [0, 1, 3, 5, 6], // Angka 5: empat pojok dan tengah
-            [0, 1, 2, 4, 5, 6] // Angka 6: dua kolom vertikal (semua kecuali tengah)
+            [3], [0, 6], [0, 3, 6], [0, 1, 5, 6], [0, 1, 3, 5, 6], [0, 1, 2, 4, 5, 6]
         ];
 
-        function createPlayerElement(text, className) { /* ... (sama) ... */ 
+        function createPlayerElement(text, className) {
             const piece = document.createElement('div');
             piece.classList.add('player', className);
             piece.textContent = text;
@@ -259,7 +252,7 @@
             return piece;
         }
 
-        function playSound(soundId) { /* ... (sama) ... */ 
+        function playSound(soundId) {
             try {
                 const soundElement = document.getElementById(soundId);
                 if (soundElement && typeof soundElement.play === 'function') {
@@ -274,44 +267,43 @@
         }
 
         function updateDiceFace(rollValue) {
-            // Sembunyikan semua titik dulu
             diceDots.forEach(dot => {
                 if(dot) dot.style.visibility = 'hidden';
             });
-
             if (rollValue >= 1 && rollValue <= 6) {
                 const pattern = dicePatterns[rollValue - 1];
                 pattern.forEach(dotIndex => {
                     if(diceDots[dotIndex]) diceDots[dotIndex].style.visibility = 'visible';
                 });
-            } else {
-                // Jika tidak ada lemparan (misalnya 0 atau null), semua titik tetap tersembunyi (dadu kosong)
             }
         }
 
-
-        function drawBoard() { /* ... (sama, tanpa background color di .snake-head dll) ... */
-            gameBoard.innerHTML = ''; 
+        function drawBoard() {
+            gameBoard.innerHTML = '';
             for (let i = BOARD_SIZE; i >= 1; i--) {
                 const cell = document.createElement('div');
                 cell.classList.add('board-cell');
-                cell.id = `cell-${i}`;
+                cell.id = `cell-${i}`; // ID `cell-100` akan diterapkan di sini
                 const cellNumber = document.createElement('span');
                 cellNumber.classList.add('cell-number');
                 cellNumber.textContent = i;
                 cell.appendChild(cellNumber);
+
+                // Kelas .snake-head dan .ladder-bottom sekarang akan mengatur background color dari CSS
+                // Termasuk #cell-100 yang akan mengambil style dari CSS
                 if (snakesAndLadders[i]) {
                     const iconSpan = document.createElement('span');
                     iconSpan.classList.add('sl-icon');
-                    if (snakesAndLadders[i] < i) { 
-                        cell.classList.add('snake-head'); // Kelas hanya untuk identifikasi, bukan background
+                    if (snakesAndLadders[i] < i) {
+                        cell.classList.add('snake-head'); // CSS akan menangani background merah
                         iconSpan.textContent = SNAKE_ICON_EMOJI;
-                    } else { 
-                        cell.classList.add('ladder-bottom'); // Kelas hanya untuk identifikasi
+                    } else {
+                        cell.classList.add('ladder-bottom'); // CSS akan menangani background biru
                         iconSpan.textContent = LADDER_ICON_EMOJI;
                     }
                     cell.appendChild(iconSpan);
-                } else { 
+                } else {
+                    // Kelas .ladder-top dan .snake-tail tidak diberi background khusus
                     for (const key in snakesAndLadders) {
                         if (snakesAndLadders[key] === i) {
                             if (parseInt(key) < i) cell.classList.add('ladder-top');
@@ -328,10 +320,9 @@
             updatePlayerPiecePosition(player2Piece, 1);
         }
 
-        function updatePlayerPiecePosition(pieceElement, position) { /* ... (sama) ... */ 
+        function updatePlayerPiecePosition(pieceElement, position) {
             if (position < 1 || position > BOARD_SIZE) {
-                pieceElement.style.display = 'none';
-                return;
+                pieceElement.style.display = 'none'; return;
             }
             pieceElement.style.display = 'block';
             const targetCell = document.getElementById(`cell-${position}`);
@@ -342,8 +333,7 @@
                 const pieceHeight = pieceElement.offsetHeight;
                 let x = cellRect.left - boardRect.left + (cellRect.width / 2) - (pieceWidth / 2);
                 let y = cellRect.top - boardRect.top + (cellRect.height / 2) - (pieceHeight / 2);
-                pieceElement.style.left = `${x}px`;
-                pieceElement.style.top = `${y}px`;
+                pieceElement.style.left = `${x}px`; pieceElement.style.top = `${y}px`;
                 const p1CurrentPos = document.getElementById('player1PosDisplay').textContent;
                 const p2CurrentPos = document.getElementById('player2PosDisplay').textContent;
                 if (p1CurrentPos == position && p2CurrentPos == position && p1CurrentPos !== "1") {
@@ -352,44 +342,31 @@
                     } else if (pieceElement === player2Piece) {
                         pieceElement.style.transform = `translateX(${pieceWidth * 0.25}px) translateY(${pieceHeight * 0.25}px)`;
                     }
-                } else {
-                    pieceElement.style.transform = 'none';
-                }
-            } else {
-                console.error(`Cell ${position} not found for piece.`);
-                pieceElement.style.display = 'none';
-            }
+                } else { pieceElement.style.transform = 'none'; }
+            } else { console.error(`Cell ${position} not found for piece.`); pieceElement.style.display = 'none'; }
         }
 
-        function showMessage(msg, isError = false) { /* ... (sama) ... */ 
+        function showMessage(msg, isError = false) {
             const messageEl = document.getElementById('message');
             const errorMessageEl = document.getElementById('errorMessage');
-            if (isError) {
-                errorMessageEl.textContent = msg;
-                messageEl.textContent = '';
-            } else {
-                messageEl.textContent = msg;
-                errorMessageEl.textContent = '';
-            }
+            if (isError) { errorMessageEl.textContent = msg; messageEl.textContent = ''; }
+            else { messageEl.textContent = msg; errorMessageEl.textContent = ''; }
         }
 
-        async function callAppsScript(action, payload = {}) { /* ... (sama) ... */
+        async function callAppsScript(action, payload = {}) {
             showMessage("Memproses...", false);
             document.getElementById('rollDiceButton').disabled = true;
             try {
                 const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: action, ...payload }),
+                    method: 'POST', body: JSON.stringify({ action: action, ...payload }),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8', },
                 });
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`Network response was not ok: ${response.status} ${response.statusText}. Details: ${errorText}`);
                 }
-                const data = await response.json(); 
-                if (data.error) { 
-                    throw new Error(data.error + (data.stack ? "\nStack: " + data.stack : ""));
-                }
+                const data = await response.json();
+                if (data.error) { throw new Error(data.error + (data.stack ? "\nStack: " + data.stack : "")); }
                 if (data.message) showMessage(data.message, false);
                 else if (!data.error && data.success) showMessage("Sukses", false);
                 return data;
@@ -404,25 +381,22 @@
             }
         }
 
-        async function fetchGameState() { /* ... (sama) ... */ 
+        async function fetchGameState() {
             if (!currentGameId) return;
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=getGameState&gameId=${currentGameId}`);
                 if (!response.ok) throw new Error(`Network response was not ok: ${response.status}`);
                 const data = await response.json();
-                if (data.success) {
-                    updateUI(data);
-                } else if (data.error && data.error.includes("Game tidak ditemukan")) {
+                if (data.success) { updateUI(data); }
+                else if (data.error && data.error.includes("Game tidak ditemukan")) {
                     alert("Game tidak ditemukan atau telah berakhir. Kembali ke halaman utama.");
                     leaveGame();
                 } else {
-                     if (!data.error.includes("Game tidak ditemukan")) { 
+                    if (!data.error.includes("Game tidak ditemukan")) {
                         showMessage(data.error || "Gagal mengambil status game.", true);
                     }
                 }
-            } catch (error) {
-                console.warn("Error fetching game state:", error);
-            }
+            } catch (error) { console.warn("Error fetching game state:", error); }
         }
 
         function updateUI(gameState) {
@@ -430,8 +404,7 @@
                 console.warn("Attempted to update UI with invalid or incomplete gameState:", gameState);
                 document.getElementById('rollDiceButton').disabled = true;
                 if (gameState && gameState.error) { showMessage(gameState.error, true); }
-                updateDiceFace(0); // Tampilkan dadu kosong jika state tidak valid
-                return;
+                updateDiceFace(0); return;
             }
             document.getElementById('displayGameId').textContent = gameState.gameId;
             const p1Name = gameState.player1 ? gameState.player1.name : "Pemain 1";
@@ -445,10 +418,7 @@
             document.getElementById('player2PosDisplay').textContent = p2Pos;
             updatePlayerPiecePosition(player2Piece, parseInt(p2Pos));
             document.getElementById('currentPlayerTurn').textContent = gameState.turn || "-";
-            
-            // Update visual dadu
-            updateDiceFace(gameState.lastDiceRoll || 0); 
-
+            updateDiceFace(gameState.lastDiceRoll || 0);
             if (gameState.message && !document.getElementById('errorMessage').textContent) {
                  showMessage(gameState.message, false);
             }
@@ -456,24 +426,18 @@
             const resetButton = document.getElementById('resetGameButton');
             if (gameState.status === "Berlangsung" && gameState.turn === currentPlayerName) {
                 rollButton.disabled = false;
-            } else {
-                rollButton.disabled = true;
-            }
+            } else { rollButton.disabled = true; }
             if (currentPlayerNumber === 1 && (gameState.status === "Berlangsung" || gameState.status === "Selesai" || gameState.status === "Menunggu Pemain 2") ) {
                 resetButton.disabled = false;
-            } else {
-                resetButton.disabled = true;
-            }
+            } else { resetButton.disabled = true; }
             if (gameState.status === "Selesai" && gameState.winner) {
                 showMessage(`${gameState.winner} MENANG! Selamat!`, false);
                 rollButton.disabled = true;
                 if (pollingInterval) clearInterval(pollingInterval);
-            } else if (gameState.status === "Menunggu Pemain 2") {
-                rollButton.disabled = true;
-            }
+            } else if (gameState.status === "Menunggu Pemain 2") { rollButton.disabled = true; }
         }
 
-        function showLobby() { /* ... (sama) ... */ 
+        function showLobby() {
             const name = document.getElementById('playerName').value.trim();
             if (!name) { alert("Masukkan nama Anda terlebih dahulu!"); return; }
             currentPlayerName = name;
@@ -482,11 +446,11 @@
             document.getElementById('gameContainer').style.display = 'none';
             refreshLobby();
         }
-        function hideLobby() { /* ... (sama) ... */
+        function hideLobby() {
             document.getElementById('playerLogin').style.display = 'block';
             document.getElementById('lobbySection').style.display = 'none';
         }
-        async function refreshLobby() { /* ... (sama) ... */
+        async function refreshLobby() {
             const gameList = document.getElementById('gameList');
             gameList.innerHTML = '<li>Memuat daftar game...</li>';
             try {
@@ -516,13 +480,13 @@
                     }
                 } else { gameList.innerHTML = `<li>Gagal memuat game: ${data.error || 'Unknown error'}</li>`; }
             } catch (error) { console.error("Error fetching games:", error); gameList.innerHTML = `<li>Error: ${error.message}</li>`; }
-         }
-        async function joinSelectedGame(gameId) { /* ... (sama) ... */ 
+           }
+        async function joinSelectedGame(gameId) {
             if (!currentPlayerName) { alert("Error: Nama pemain belum diatur."); hideLobby(); return; }
             document.getElementById('gameIdInput').value = gameId;
             joinOrCreateGame();
         }
-        async function joinOrCreateGame() { /* ... (sama) ... */ 
+        async function joinOrCreateGame() {
             const name = document.getElementById('playerName').value.trim();
             const gameIdToJoin = document.getElementById('gameIdInput').value.trim().toUpperCase();
             if (!name) { alert("Masukkan Nama Anda!"); return; }
@@ -540,17 +504,15 @@
                 document.getElementById('playerLogin').style.display = 'none';
                 document.getElementById('lobbySection').style.display = 'none';
                 document.getElementById('gameContainer').style.display = 'flex';
-                drawBoard();
-                updateUI(result); 
+                drawBoard(); updateUI(result);
                 if (pollingInterval) clearInterval(pollingInterval);
                 pollingInterval = setInterval(fetchGameState, 3000);
             } else { showMessage(result.error || "Gagal bergabung atau membuat game.", true); }
         }
 
-        async function rollDice() { /* ... (sama, termasuk logika suara) ... */ 
+        async function rollDice() {
             if (!currentGameId || !currentPlayerName) {
-                showMessage("Tidak ada game aktif atau pemain tidak valid.", true);
-                return;
+                showMessage("Tidak ada game aktif atau pemain tidak valid.", true); return;
             }
             let oldPosition;
             const activePlayerName = document.getElementById('currentPlayerTurn').textContent;
@@ -562,12 +524,10 @@
                 oldPosition = parseInt(document.getElementById('player2PosDisplay').textContent);
             }
             if(currentPlayerName !== activePlayerName) {
-                showMessage("Bukan giliran Anda untuk melempar dadu (internal check).", true);
-                return;
+                showMessage("Bukan giliran Anda untuk melempar dadu (internal check).", true); return;
             }
             const result = await callAppsScript('rollDice', { gameId: currentGameId, player: currentPlayerName });
             if (result.success) {
-                let playerWhosePositionChanged;
                 let newReportedPosition;
                 if (result.player1 && result.player1.name === currentPlayerName) {
                     newReportedPosition = result.player1.position;
@@ -586,32 +546,28 @@
                     if (pollingInterval) clearInterval(pollingInterval);
                     setTimeout(()=> alert(`${result.winner} MENANG!`), 100);
                 }
-            } else {
-                showMessage(result.error || "Gagal melempar dadu.", true);
-                await fetchGameState();
-            }
+            } else { showMessage(result.error || "Gagal melempar dadu.", true); await fetchGameState(); }
         }
 
-        function confirmResetGame() { /* ... (sama) ... */ 
+        function confirmResetGame() {
             if (!confirm("Apakah Anda yakin ingin mereset game ini? Semua kemajuan akan hilang.")) { return; }
             resetGameAction();
         }
-        async function resetGameAction() { /* ... (sama) ... */ 
+        async function resetGameAction() {
             if (!currentGameId) { showMessage("Tidak ada game untuk direset.", true); return; }
             const result = await callAppsScript('resetGame', { gameId: currentGameId });
             if (result.success) {
                 showMessage("Game berhasil direset.", false);
-                await fetchGameState(); // Ini akan memanggil updateUI yang akan mereset dadu visual
-                if (pollingInterval) clearInterval(pollingInterval); 
-                pollingInterval = setInterval(fetchGameState, 3000); 
+                await fetchGameState();
+                if (pollingInterval) clearInterval(pollingInterval);
+                pollingInterval = setInterval(fetchGameState, 3000);
             } else { showMessage(result.error || "Gagal mereset game.", true); }
         }
-        function leaveGame() { /* ... (sama) ... */ 
+        function leaveGame() {
             if (pollingInterval) clearInterval(pollingInterval);
             pollingInterval = null;
-            const oldGameId = currentGameId; 
-            currentGameId = "";
-            currentPlayerNumber = 0;
+            const oldGameId = currentGameId;
+            currentGameId = ""; currentPlayerNumber = 0;
             document.getElementById('playerLogin').style.display = 'block';
             document.getElementById('lobbySection').style.display = 'none';
             document.getElementById('gameContainer').style.display = 'none';
@@ -623,11 +579,10 @@
             document.getElementById('player2NameDisplay').textContent = "Pemain 2";
             document.getElementById('player2PosDisplay').textContent = "1";
             document.getElementById('currentPlayerTurn').textContent = "-";
-            updateDiceFace(0); // Kosongkan dadu saat keluar
-            player1Piece.style.display = 'none';
-            player2Piece.style.display = 'none';
+            updateDiceFace(0);
+            player1Piece.style.display = 'none'; player2Piece.style.display = 'none';
         }
-        function getLocalGameState() { /* ... (sama) ... */ 
+        function getLocalGameState() {
             try {
                 const p1Name = document.getElementById('player1NameDisplay').textContent;
                 const p2Name = document.getElementById('player2NameDisplay').textContent;
@@ -640,27 +595,24 @@
                     else if (p1Name !== "Pemain 1" && p2Name !== "Pemain 2" && !p2Name.includes("Menunggu...") && !p2Name.includes("Kosong")) status = "Berlangsung";
                     else if (p1Name !== "Pemain 1") status = "Menunggu Pemain 2";
                 }
-                let lastRoll = 0; // Default jika tidak ada dadu
-                const diceFaceElement = document.getElementById('diceFace');
-                if (diceFaceElement && diceFaceElement.dataset.value) { // Jika kita menyimpan value di dadu
-                    lastRoll = parseInt(diceFaceElement.dataset.value) || 0;
-                }
-
+                let lastRoll = 0;
+                // Tidak mengambil dari dataset dadu lagi karena updateUI yang mengatur visual dadu
+                // Untuk state lokal, cukup ambil dari gameState jika perlu, atau default 0
+                // gameState.lastDiceRoll akan ada di updateUI
                 return {
                     success: true, gameId: currentGameId,
                     player1: { name: p1Name, position: parseInt(document.getElementById('player1PosDisplay').textContent) || 1 },
                     player2: { name: p2Name, position: parseInt(document.getElementById('player2PosDisplay').textContent) || 1 },
                     turn: turn, status: status,
-                    lastDiceRoll: lastRoll,
+                    lastDiceRoll: lastRoll, // Ini mungkin tidak selalu akurat untuk local state, tapi UI yang menampilkan dadu
                     winner: message.includes("MENANG") ? (message.split(" ")[0]) : "",
                     message: message
                 };
             } catch(e) { console.error("Error getLocalGameState:", e); return null; }
         }
 
-        // Inisialisasi papan dan dadu kosong saat halaman dimuat
         drawBoard();
-        updateDiceFace(0); // Tampilkan dadu kosong di awal
+        updateDiceFace(0);
         player1Piece.style.display = 'none';
         player2Piece.style.display = 'none';
     </script>
