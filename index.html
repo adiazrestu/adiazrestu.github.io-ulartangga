@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ular Tangga Online</title>
+    <style>
+        /* Reset dasar dan font dasar */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 14px;
+            color: #333;
+        }
+
+        h1 { font-size: 1.8em; margin-bottom: 15px; text-align: center; }
+        h2 { font-size: 1.5em; margin-bottom: 10px; text-align: center; }
+        h3 { font-size: 1.2em; margin-bottom: 8px; text-align: center; }
+
+        .section-container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 1em;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        button:hover:not(:disabled) { background-color: #45a049; }
+
+        #playerLogin { display: flex; flex-direction: column; align-items: center; }
+        #playerLogin input, #playerLogin button { max-width: 350px; }
+
+        #lobbySection { /* Sudah di dalam .section-container */ }
+        #gameList {
+            list-style-type: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        #gameList li {
+            background-color: #f9f9f9;
+            border-bottom: 1px solid #eee;
+            padding: 10px;
+            font-size: 0.9em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        #gameList li:last-child { border-bottom: none; }
+        #gameList li button {
+            width: auto;
+            font-size: 0.8em;
+            padding: 6px 10px;
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .game-board-container {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            position: relative;
+            border: 2px solid #333;
+            background-color: #fff;
+            margin: 0 auto;
+        }
+
+        .board-cell {
+            width: 10%;
+            height: 10%;
+            float: left;
+            box-sizing: border-box;
+            border: 1px solid #eee;
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-start;
+            position: relative;
+        }
+        .cell-number {
+            padding: 2px;
+            color: #aaa;
+            font-size: clamp(6px, 1.8vw, 10px);
+            z-index: 1;
+        }
+
+        .sl-icon {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            font-size: clamp(14px, 3.8vw, 20px);
+            line-height: 1;
+            opacity: 0.85;
+            z-index: 0;
+        }
+
+        .player {
+            border-radius: 50%;
+            position: absolute;
+            transition: all 0.5s ease-in-out;
+            text-align: center;
+            font-weight: bold;
+            color: white;
+            z-index: 10;
+            width: clamp(15px, 5vw, 25px);
+            height: clamp(15px, 5vw, 25px);
+            line-height: clamp(15px, 5vw, 25px);
+            font-size: clamp(8px, 2.5vw, 12px);
+        }
+        .player1 { background-color: red; }
+        .player2 { background-color: blue; }
+
+        /* Warna latar diubah menjadi putih dengan transparansi */
+        .snake-head { background-color: rgba(255, 255, 255, 0.1); }
+        .ladder-bottom { background-color: rgba(255, 255, 255, 0.1); }
+        .snake-tail { background-color: rgba(255, 255, 255, 0.1); }
+        .ladder-top { background-color: rgba(255, 255, 255, 0.1); }
+
+        .controls-info-wrapper {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 0 auto;
+        }
+        .game-info, .controls {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            width: 100%;
+        }
+        .game-info p { margin-bottom: 8px; font-size: 0.95em; word-wrap: break-word; }
+        .game-info strong { color: #000; }
+
+        #diceResult {
+            font-size: 1.5em;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        #message, #errorMessage {
+            margin-top: 10px;
+            font-weight: bold;
+            min-height: 20px;
+            text-align: center;
+            font-size: 0.95em;
+            word-wrap: break-word;
+        }
+        #message { color: green; }
+        #errorMessage { color: red; }
+
+        @media (min-width: 769px) {
+            body { margin: 20px; font-size: 16px; }
+            h1 { font-size: 2em; margin-bottom: 20px; }
+            h2 { font-size: 1.6em; margin-bottom: 15px; }
+            h3 { font-size: 1.3em; margin-bottom: 10px; }
+            .section-container { padding: 20px; }
+
+            .container { flex-direction: row; align-items: flex-start; max-width: 900px; }
+            .game-board-container { width: 60%; max-width: 600px; margin: 0; }
+            .controls-info-wrapper { width: 35%; max-width: 300px; margin: 0; }
+
+            .player {
+                width: clamp(20px, 3.5vw, 30px);
+                height: clamp(20px, 3.5vw, 30px);
+                line-height: clamp(20px, 3.5vw, 30px);
+                font-size: clamp(10px, 1.8vw, 14px);
+            }
+            .cell-number { font-size: clamp(8px, 1.5vw, 12px); }
+            .sl-icon { font-size: clamp(16px, 3.5vw, 24px); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Ular Tangga Multiplayer</h1>
+
+    <div id="playerLogin" class="section-container">
+        <h2>Masuk atau Buat Game</h2>
+        <input type="text" id="playerName" placeholder="Masukkan Nama Anda">
+        <button onclick="showLobby()">Lihat Game Tersedia</button>
+        <br>
+        <input type="text" id="gameIdInput" placeholder="Masukkan ID Game (jika bergabung)">
+        <button onclick="joinOrCreateGame()">Gabung / Buat Game Baru</button>
+    </div>
+
+    <div id="lobbySection" class="section-container" style="display:none;">
+        <h3>Game yang Tersedia</h3>
+        <ul id="gameList"></ul>
+        <button onclick="refreshLobby()">Refresh Daftar</button>
+        <button onclick="hideLobby()">Kembali ke Login</button>
+    </div>
+
+    <div class="container" id="gameContainer" style="display:none;">
+        <div class="game-board-container" id="gameBoard">
+        </div>
+
+        <div class="controls-info-wrapper">
+            <div class="game-info">
+                <h3>Info Permainan</h3>
+                <p>Game ID: <strong id="displayGameId"></strong></p>
+                <p>Pemain 1 (Merah): <strong id="player1NameDisplay"></strong> - Posisi: <strong id="player1PosDisplay">1</strong></p>
+                <p>Pemain 2 (Biru): <strong id="player2NameDisplay"></strong> - Posisi: <strong id="player2PosDisplay">1</strong></p>
+                <p>Giliran: <strong id="currentPlayerTurn"></strong></p>
+                <div id="diceResult">Dadu: -</div>
+                <button id="rollDiceButton" onclick="rollDice()" disabled>Kocok Dadu</button>
+                <p id="message"></p>
+                <p id="errorMessage"></p>
+            </div>
+            <div class="controls">
+                <h3>Kontrol Lain</h3>
+                <button id="resetGameButton" onclick="confirmResetGame()" disabled>Reset Game</button>
+                <button onclick="leaveGame()">Keluar Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BOARD_SIZE = 100;
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyybdOniRj9pf2rZELQTXK_jEiPHx-s4pAtKDpTm8wq5Lrb7-ILzF-OtFN8aphAsPf5Jw/exec";
+
+        const SNAKE_ICON_EMOJI = '🐍';
+        const LADDER_ICON_EMOJI = '🪜';
+
+        const snakesAndLadders = {
+            17: 7, 54: 34, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 99: 78,
+            4: 14, 9: 31, 20: 38, 28: 84, 40: 59, 51: 67, 63: 81, 71: 91
+        };
+
+        let currentPlayerName = "";
+        let currentGameId = "";
+        let currentPlayerNumber = 0;
+        let pollingInterval;
+
+        const gameBoard = document.getElementById('gameBoard');
+        const player1Piece = createPlayerElement('P1', 'player1');
+        const player2Piece = createPlayerElement('P2', 'player2');
+
+        function createPlayerElement(text, className) {
+            const piece = document.createElement('div');
+            piece.classList.add('player', className);
+            piece.textContent = text;
+            piece.style.display = 'none';
+            return piece;
+        }
+
+        function drawBoard() {
+            gameBoard.innerHTML = '';
+
+            for (let i = BOARD_SIZE; i >= 1; i--) {
+                const cell = document.createElement('div');
+                cell.classList.add('board-cell');
+                cell.id = `cell-${i}`;
+
+                const cellNumber = document.createElement('span');
+                cellNumber.classList.add('cell-number');
+                cellNumber.textContent = i;
+                cell.appendChild(cellNumber);
+
+                if (snakesAndLadders[i]) {
+                    const iconSpan = document.createElement('span');
+                    iconSpan.classList.add('sl-icon');
+                    if (snakesAndLadders[i] < i) {
+                        cell.classList.add('snake-head');
+                        iconSpan.textContent = SNAKE_ICON_EMOJI;
+                    } else {
+                        cell.classList.add('ladder-bottom');
+                        iconSpan.textContent = LADDER_ICON_EMOJI;
+                    }
+                    cell.appendChild(iconSpan);
+                } else {
+                    for (const key in snakesAndLadders) {
+                        if (snakesAndLadders[key] === i) {
+                            if (parseInt(key) < i) cell.classList.add('ladder-top');
+                            else cell.classList.add('snake-tail');
+                            break;
+                        }
+                    }
+                }
+                gameBoard.appendChild(cell);
+            }
+            if (!gameBoard.contains(player1Piece)) gameBoard.appendChild(player1Piece);
+            if (!gameBoard.contains(player2Piece)) gameBoard.appendChild(player2Piece);
+
+            updatePlayerPiecePosition(player1Piece, 1);
+            updatePlayerPiecePosition(player2Piece, 1);
+        }
+
+        function updatePlayerPiecePosition(pieceElement, position) {
+            if (position < 1 || position > BOARD_SIZE) {
+                pieceElement.style.display = 'none';
+                return;
+            }
+            pieceElement.style.display = 'block';
+
+            const targetCell = document.getElementById(`cell-${position}`);
+            if (targetCell) {
+                const boardRect = gameBoard.getBoundingClientRect();
+                const cellRect = targetCell.getBoundingClientRect();
+
+                const pieceWidth = pieceElement.offsetWidth;
+                const pieceHeight = pieceElement.offsetHeight;
+
+                let x = cellRect.left - boardRect.left + (cellRect.width / 2) - (pieceWidth / 2);
+                let y = cellRect.top - boardRect.top + (cellRect.height / 2) - (pieceHeight / 2);
+
+                pieceElement.style.left = `${x}px`;
+                pieceElement.style.top = `${y}px`;
+
+                const p1CurrentPos = document.getElementById('player1PosDisplay').textContent;
+                const p2CurrentPos = document.getElementById('player2PosDisplay').textContent;
+
+                if (p1CurrentPos == position && p2CurrentPos == position && p1CurrentPos !== "1") {
+                    if (pieceElement === player1Piece) {
+                        pieceElement.style.transform = `translateX(-${pieceWidth * 0.25}px) translateY(-${pieceHeight * 0.25}px)`;
+                    } else if (pieceElement === player2Piece) {
+                        pieceElement.style.transform = `translateX(${pieceWidth * 0.25}px) translateY(${pieceHeight * 0.25}px)`;
+                    }
+                } else {
+                    pieceElement.style.transform = 'none';
+                }
+
+            } else {
+                console.error(`Cell ${position} not found for piece.`);
+                pieceElement.style.display = 'none';
+            }
+        }
+
+        function showMessage(msg, isError = false) {
+            const messageEl = document.getElementById('message');
+            const errorMessageEl = document.getElementById('errorMessage');
+            if (isError) {
+                errorMessageEl.textContent = msg;
+                messageEl.textContent = '';
+            } else {
+                messageEl.textContent = msg;
+                errorMessageEl.textContent = '';
+            }
+        }
+
+        async function callAppsScript(action, payload = {}) {
+            showMessage("Memproses...", false);
+            document.getElementById('rollDiceButton').disabled = true;
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: action, ...payload }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8', },
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Network response was not ok: ${response.status} ${response.statusText}. Details: ${errorText}`);
+                }
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error + (data.stack ? "\nStack: " + data.stack : ""));
+                }
+                if (data.message) showMessage(data.message, false);
+                else if (!data.error && data.success) showMessage("Sukses", false);
+
+                return data;
+            } catch (error) {
+                console.error("Error calling Apps Script:", error);
+                showMessage(`Error: ${error.message}`, true);
+                const localGameState = getLocalGameState();
+                if (localGameState && localGameState.status === "Berlangsung" && localGameState.turn === currentPlayerName) {
+                    document.getElementById('rollDiceButton').disabled = false;
+                }
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function fetchGameState() {
+            if (!currentGameId) return;
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getGameState&gameId=${currentGameId}`);
+                if (!response.ok) throw new Error(`Network response was not ok: ${response.status}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    updateUI(data);
+                } else if (data.error && data.error.includes("Game tidak ditemukan")) {
+                    alert("Game tidak ditemukan atau telah berakhir. Kembali ke halaman utama.");
+                    leaveGame();
+                } else {
+                    if (!data.error.includes("Game tidak ditemukan")) {
+                        showMessage(data.error || "Gagal mengambil status game.", true);
+                    }
+                }
+            } catch (error) {
+                console.warn("Error fetching game state:", error);
+            }
+        }
+
+        function updateUI(gameState) {
+            if (!gameState || !gameState.gameId) {
+                console.warn("Attempted to update UI with invalid or incomplete gameState:", gameState);
+                document.getElementById('rollDiceButton').disabled = true;
+                if (gameState && gameState.error) {
+                    showMessage(gameState.error, true);
+                }
+                return;
+            }
+
+            document.getElementById('displayGameId').textContent = gameState.gameId;
+            const p1Name = gameState.player1 ? gameState.player1.name : "Pemain 1";
+            const p1Pos = gameState.player1 ? gameState.player1.position : 1;
+            document.getElementById('player1NameDisplay').textContent = p1Name;
+            document.getElementById('player1PosDisplay').textContent = p1Pos;
+            updatePlayerPiecePosition(player1Piece, parseInt(p1Pos));
+
+            const p2Name = gameState.player2 ? gameState.player2.name : (gameState.status === "Menunggu Pemain 2" ? "Menunggu..." : "Pemain 2");
+            const p2Pos = gameState.player2 ? gameState.player2.position : 1;
+            document.getElementById('player2NameDisplay').textContent = p2Name;
+            document.getElementById('player2PosDisplay').textContent = p2Pos;
+            updatePlayerPiecePosition(player2Piece, parseInt(p2Pos));
+
+            document.getElementById('currentPlayerTurn').textContent = gameState.turn || "-";
+            document.getElementById('diceResult').textContent = `Dadu: ${gameState.lastDiceRoll || "-"}`;
+
+            if (gameState.message && !document.getElementById('errorMessage').textContent) {
+                showMessage(gameState.message, false);
+            }
+
+            const rollButton = document.getElementById('rollDiceButton');
+            const resetButton = document.getElementById('resetGameButton');
+
+            if (gameState.status === "Berlangsung" && gameState.turn === currentPlayerName) {
+                rollButton.disabled = false;
+            } else {
+                rollButton.disabled = true;
+            }
+
+            if (currentPlayerNumber === 1 && (gameState.status === "Berlangsung" || gameState.status === "Selesai" || gameState.status === "Menunggu Pemain 2")) {
+                resetButton.disabled = false;
+            } else {
+                resetButton.disabled = true;
+            }
+
+            if (gameState.status === "Selesai" && gameState.winner) {
+                showMessage(`${gameState.winner} MENANG! Selamat!`, false);
+                rollButton.disabled = true;
+                if (pollingInterval) clearInterval(pollingInterval);
+            } else if (gameState.status === "Menunggu Pemain 2") {
+                rollButton.disabled = true;
+            }
+        }
+
+        function showLobby() {
+            const name = document.getElementById('playerName').value.trim();
+            if (!name) { alert("Masukkan nama Anda terlebih dahulu!"); return; }
+            currentPlayerName = name;
+            document.getElementById('playerLogin').style.display = 'none';
+            document.getElementById('lobbySection').style.display = 'block';
+            document.getElementById('gameContainer').style.display = 'none';
+            refreshLobby();
+        }
+
+        function restoreGameStateFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const gameId = urlParams.get('gameId');
+            const playerName = urlParams.get('playerName');
+            if (gameId && playerName) {
+                document.getElementById('playerName').value = playerName;
+                document.getElementById('gameIdInput').value = gameId;
+                joinOrCreateGame();
+            }
+        }
+
+        function hideLobby() {
+            document.getElementById('playerLogin').style.display = 'block';
+            document.getElementById('lobbySection').style.display = 'none';
+        }
+
+        async function refreshLobby() {
+            const gameList = document.getElementById('gameList');
+            gameList.innerHTML = '<li>Memuat daftar game...</li>';
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getGames`);
+                if (!response.ok) throw new Error(`Network response was not ok: ${response.status}`);
+                const data = await response.json();
+                if (data.success && data.games) {
+                    gameList.innerHTML = '';
+                    if (data.games.length === 0) {
+                        gameList.innerHTML = '<li>Tidak ada game aktif. Buat yang baru!</li>';
+                    } else {
+                        data.games.forEach(game => {
+                            if (!game.gameId) return;
+                            const li = document.createElement('li');
+                            let gameInfoText = `ID: ${game.gameId} <br> P1: ${game.player1 || '?'} <br> P2: ${game.player2 || 'Kosong'} (${game.status || 'N/A'})`;
+                            const textSpan = document.createElement('span');
+                            textSpan.innerHTML = gameInfoText;
+                            li.appendChild(textSpan);
+                            if (!game.player2 || game.player2.toLowerCase().includes("menunggu") || game.player2.toLowerCase().includes("kosong")) {
+                                const joinBtn = document.createElement('button');
+                                joinBtn.textContent = 'Gabung';
+                                joinBtn.onclick = () => joinSelectedGame(game.gameId);
+                                li.appendChild(joinBtn);
+                            }
+                            gameList.appendChild(li);
+                        });
+                    }
+                } else { gameList.innerHTML = `<li>Gagal memuat game: ${data.error || 'Unknown error'}</li>`; }
+            } catch (error) { console.error("Error fetching games:", error); gameList.innerHTML = `<li>Error: ${error.message}</li>`; }
+        }
+
+        async function joinSelectedGame(gameId) {
+            if (!currentPlayerName) { alert("Error: Nama pemain belum diatur."); hideLobby(); return; }
+            document.getElementById('gameIdInput').value = gameId;
+            joinOrCreateGame();
+        }
+
+        async function joinOrCreateGame() {
+            const name = document.getElementById('playerName').value.trim();
+            const gameIdToJoin = document.getElementById('gameIdInput').value.trim().toUpperCase();
+            if (!name) { alert("Masukkan Nama Anda!"); return; }
+            currentPlayerName = name;
+            let result;
+            if (gameIdToJoin) {
+                result = await callAppsScript('joinGame', { gameId: gameIdToJoin, playerName: currentPlayerName });
+                if (result.success) { currentPlayerNumber = result.playerNum || ((result.player2 && result.player2.name === currentPlayerName) ? 2 : 1); }
+            } else {
+                result = await callAppsScript('createGame', { playerName: currentPlayerName });
+                if (result.success) { currentPlayerNumber = result.playerNum || 1; }
+            }
+            if (result.success && result.gameId) {
+                currentGameId = result.gameId;
+                document.getElementById('playerLogin').style.display = 'none';
+                document.getElementById('lobbySection').style.display = 'none';
+                document.getElementById('gameContainer').style.display = 'flex';
+                drawBoard();
+                updateUI(result);
+                if (pollingInterval) clearInterval(pollingInterval);
+                pollingInterval = setInterval(fetchGameState, 3000);
+            } else { showMessage(result.error || "Gagal bergabung atau membuat game.", true); }
+        }
+
+        async function rollDice() {
+            if (!currentGameId || !currentPlayerName) { showMessage("Tidak ada game aktif atau pemain tidak valid.", true); return; }
+            const result = await callAppsScript('rollDice', { gameId: currentGameId, player: currentPlayerName });
+            if (result.success) {
+                updateUI(result);
+                if (result.gameOver || (result.status && result.status === "Selesai")) {
+                    if (pollingInterval) clearInterval(pollingInterval);
+                    setTimeout(() => alert(`${result.winner} MENANG!`), 100);
+                }
+            } else { showMessage(result.error || "Gagal melempar dadu.", true); await fetchGameState(); }
+        }
+
+        function confirmResetGame() {
+            if (!confirm("Apakah Anda yakin ingin mereset game ini? Semua kemajuan akan hilang.")) { return; }
+            resetGameAction();
+        }
+
+        async function resetGameAction() {
+            if (!currentGameId) { showMessage("Tidak ada game untuk direset.", true); return; }
+            const result = await callAppsScript('resetGame', { gameId: currentGameId });
+            if (result.success) {
+                showMessage("Game berhasil direset.", false);
+                await fetchGameState();
+                if (pollingInterval) clearInterval(pollingInterval);
+                pollingInterval = setInterval(fetchGameState, 3000);
+            } else { showMessage(result.error || "Gagal mereset game.", true); }
+        }
+
+        function leaveGame() {
+            if (pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = null;
+            const oldGameId = currentGameId;
+            currentGameId = "";
+            currentPlayerNumber = 0;
+            document.getElementById('playerLogin').style.display = 'block';
+            document.getElementById('lobbySection').style.display = 'none';
+            document.getElementById('gameContainer').style.display = 'none';
+            showMessage("Anda telah keluar dari game " + (oldGameId || "") + ".");
+            document.getElementById('gameIdInput').value = '';
+            document.getElementById('displayGameId').textContent = "";
+            document.getElementById('player1NameDisplay').textContent = "Pemain 1";
+            document.getElementById('player1PosDisplay').textContent = "1";
+            document.getElementById('player2NameDisplay').textContent = "Pemain 2";
+            document.getElementById('player2PosDisplay').textContent = "1";
+            document.getElementById('currentPlayerTurn').textContent = "-";
+            document.getElementById('diceResult').textContent = "Dadu: -";
+            player1Piece.style.display = 'none';
+            player2Piece.style.display = 'none';
+        }
+
+        function getLocalGameState() {
+            try {
+                const p1Name = document.getElementById('player1NameDisplay').textContent;
+                const p2Name = document.getElementById('player2NameDisplay').textContent;
+                const turn = document.getElementById('currentPlayerTurn').textContent;
+                const message = document.getElementById('message').textContent;
+                let status = "Tidak Aktif";
+                if (currentGameId) {
+                    if (message.includes("MENANG!")) status = "Selesai";
+                    else if ((p2Name.includes("Menunggu...") || p2Name.includes("Kosong")) && p1Name !== "Pemain 1") status = "Menunggu Pemain 2";
+                    else if (p1Name !== "Pemain 1" && p2Name !== "Pemain 2" && !p2Name.includes("Menunggu...") && !p2Name.includes("Kosong")) status = "Berlangsung";
+                    else if (p1Name !== "Pemain 1") status = "Menunggu Pemain 2";
+                }
+                return {
+                    success: true,
+                    gameId: currentGameId,
+                    player1: { name: p1Name, position: parseInt(document.getElementById('player1PosDisplay').textContent) || 1 },
+                    player2: { name: p2Name, position: parseInt(document.getElementById('player2PosDisplay').textContent) || 1 },
+                    turn: turn,
+                    status: status,
+                    lastDiceRoll: document.getElementById('diceResult').textContent.replace('Dadu: ', ''),
+                    winner: message.includes("MENANG") ? (message.split(" ")[0]) : "",
+                    message: message
+                };
+            } catch (e) { console.error("Error getLocalGameState:", e); return null; }
+        }
+
+        drawBoard();
+        player1Piece.style.display = 'none';
+        player2Piece.style.display = 'none';
+    </script>
+</body>
+</html>
